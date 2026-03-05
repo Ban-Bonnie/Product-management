@@ -5,12 +5,13 @@ const validator = require("validator");
 const security = require("../utils/security");
 const auth = require("../middleware/auth");
 
-/* ADMIN LOGIN PAGE */
+/* ADMIN ROUTES */
+
 router.get("/login",(req,res)=>{
     res.render("admin-login");
 });
 
-/* ADMIN LOGIN */
+/* LOGIN */
 router.post("/login",(req,res)=>{
 
     let email = req.body.email.trim();
