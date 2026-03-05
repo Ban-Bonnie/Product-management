@@ -1,0 +1,23 @@
+<h2>Products</h2>
+
+<table border="1">
+
+<tr>
+<th>Name</th>
+<th>Price</th>
+<th>Description</th>
+</tr>
+
+<% products.forEach(p => { %>
+
+<tr>
+<td><%= p.name %></td>
+<td><%= p.price %></td>
+<td><%= p.description %></td>
+</tr>
+
+<% }) %>
+
+</table>
+
+<a href="/user/profile">Update Profile</a>

@@ -1,0 +1,86 @@
+<h2>Admin Dashboard</h2>
+
+
+
+<h3>Users</h3>
+
+<table border="1">
+<tr>
+<th>ID</th>
+<th>Name</th>
+<th>Email</th>
+</tr>
+
+<% users.forEach(user => { %>
+
+<tr>
+<td><%= user.id %></td>
+<td><%= user.name %></td>
+<td><%= user.email %></td>
+</tr>
+
+<% }) %>
+
+</table>
+
+
+<h3>Add Product</h3>
+
+<form action="/admin/add-product" method="POST">
+
+<input name="name" placeholder="Product Name" required>
+<input name="price" placeholder="Price" required>
+<input name="description" placeholder="Description" required>
+
+<button type="submit">Add Product</button>
+
+</form>
+
+
+<h3>Products</h3>
+
+<table border="1">
+
+<tr>
+<th>ID</th>
+<th>Name</th>
+<th>Price</th>
+<th>Description</th>
+<th>Update</th>
+<th>Delete</th>
+</tr>
+
+<% products.forEach(p => { %>
+
+<tr>
+
+<td><%= p.id %></td>
+
+<td>
+<form action="/admin/update-product" method="POST">
+<input type="hidden" name="id" value="<%= p.id %>">
+<input name="name" value="<%= p.name %>">
+</td>
+
+<td>
+<input name="price" value="<%= p.price %>">
+</td>
+
+<td>
+<input name="description" value="<%= p.description %>">
+</td>
+
+<td>
+<button type="submit">Update</button>
+</form>
+</td>
+
+<td>
+<a href="/admin/delete-product/<%= p.id %>">Delete</a>
+</td>
+
+</tr>
+
+<% }) %>
+
+</table>
