@@ -2,9 +2,13 @@
 
 <form action="/user/update-profile" method="POST">
 
-<input name="name" value="<%= user.name %>">
-<input name="email" value="<%= user.email %>">
+<input name="name" value="<%= user.name %>" required>
+<input name="email" value="<%= user.email %>" required>
+
+<input type="password" name="password" placeholder="Enter password to confirm" required>
 
 <button>Update</button>
+
 <a href="/user/delete-profile">Delete Account</a>
+
 </form>

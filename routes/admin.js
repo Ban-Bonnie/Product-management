@@ -44,6 +44,14 @@ router.post("/login",(req,res)=>{
 
 });
 
+/* ADMIN LOGOUT */
+router.get("/logout",(req,res)=>{
+
+    delete req.session.admin;
+    res.redirect("/admin/login");
+
+});
+
 /* DASHBOARD */
 router.get("/dashboard",auth.checkAdmin,(req,res)=>{
 

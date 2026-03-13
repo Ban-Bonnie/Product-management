@@ -1,9 +1,9 @@
 const bcrypt = require("bcrypt");
 const CryptoJS = require("crypto-js");
-
 const SECRET_KEY = "mysecretkey123";
 
-/* PASSWORD HASH */
+
+/* HASH SA PASSW */
 
 async function hashPassword(password){
     const saltRounds = 10;
@@ -14,7 +14,7 @@ async function comparePassword(password, hash){
     return await bcrypt.compare(password, hash);
 }
 
-/* AES ENCRYPT */
+/* AES FUCNTIONS */
 
 function encrypt(text){
     return CryptoJS.AES.encrypt(text, SECRET_KEY).toString();
@@ -31,3 +31,4 @@ module.exports = {
     encrypt,
     decrypt
 };
+

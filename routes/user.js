@@ -3,7 +3,6 @@ const router = express.Router();
 const db = require("../db");
 
 
-
 /* Validator */
 const validator = require("validator");
 const security = require("../utils/security");
@@ -11,7 +10,6 @@ const auth = require("../middleware/auth");
 
 
 /* LOGIN PAGE */
-
 router.get("/login",(req,res)=>{
     res.render("user-login");
 });
@@ -92,37 +90,75 @@ router.post("/register", async (req,res)=>{
 
 /* USER DASHBOARD */
 
-router.get("/dashboard",(req,res)=>{
+router.get("/dashboard", auth.checkUser,(req,res)=>{
 
     db.execute("SELECT * FROM products",(err,products)=>{
         res.render("products",{products});
     });
 
 });
+/* LOGOUT */
+router.get("/logout",(req,res)=>{
+
+    req.session.destroy((err)=>{
+        if(err){
+            return res.send("Error logging out");
+        }
+
+        res.redirect("/user/login");
+    });
+
+});
 
 /* PROFILE PAGE */
 
-router.get("/profile",(req,res)=>{
-    res.render("profile",{user:req.session.user});
+router.get("/profile", auth.checkUser,(req,res)=>{
+
+    const user = req.session.user;
+
+    const decryptedUser = {
+        id: user.id,
+        name: security.decrypt(user.name),
+        email: security.decrypt(user.email)
+    };
+
+    res.render("profile",{user: decryptedUser});
+
 });
 
 /* UPDATE PROFILE */
-
-router.post("/update-profile",(req,res)=>{
+router.post("/update-profile",auth.checkUser, async (req,res)=>{
 
     let name = req.body.name.trim();
     let email = req.body.email.trim();
+    let password = req.body.password.trim();
+
+    const user = req.session.user;
+
+    const match = await security.comparePassword(password,user.password);
+
+    if(!match){
+        return res.send("<script>alert('Wrong password'); window.location='/user/profile'</script>");
+    }
+
+    const encryptedName = security.encrypt(name);
+    const encryptedEmail = security.encrypt(email);
 
     const sql = "UPDATE users SET name=?, email=? WHERE id=?";
 
-    db.execute(sql,[name,email,req.session.user.id],()=>{
+    db.execute(sql,[encryptedName,encryptedEmail,user.id],()=>{
+
+        req.session.user.name = encryptedName;
+        req.session.user.email = encryptedEmail;
+
         res.redirect("/user/profile");
+
     });
 
 });
 
 /* DELETE PROFILE */
-router.get("/delete-profile",(req,res)=>{
+router.get("/delete-profile",auth.checkUser,(req,res)=>{
 
     const sql = "DELETE FROM users WHERE id=?";
 
