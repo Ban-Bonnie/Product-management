@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
-
+const mailer = require("../utils/mailer");
 
 /* Validator */
 const validator = require("validator");
@@ -57,39 +57,107 @@ router.get("/register",(req,res)=>{
 /* REGISTER USER */
 router.post("/register", async (req,res)=>{
 
-    let name = validator.escape(req.body.name.trim());
-    let email = validator.normalizeEmail(req.body.email.trim());
-    let password = req.body.password.trim();
+    try{
 
-    if(password.length < 8){
-        return res.send("Password must be at least 8 characters");
-    }
+        let name = validator.escape(req.body.name.trim());
+        let email = validator.normalizeEmail(req.body.email.trim());
+        let password = req.body.password.trim();
 
-    if(!validator.isAlphanumeric(password)){
-        return res.send("Password must be alphanumeric");
-    }
-
-    const hashedPassword = await security.hashPassword(password);
-
-    const encryptedName = security.encrypt(name);
-    const encryptedEmail = security.encrypt(email);
-
-    const sql = "INSERT INTO users(name,email,password) VALUES(?,?,?)";
-
-    db.execute(sql,[encryptedName,encryptedEmail,hashedPassword],(err)=>{
-
-        if(err){
-            res.send("Email already exists");
-        }else{
-            res.redirect("/user/login");
+        if(password.length < 8){
+            return res.send("Password must be at least 8 characters");
         }
 
-    });
+        if(!validator.isAlphanumeric(password)){
+            return res.send("Password must be alphanumeric");
+        }
+        
+        const otp = Math.floor(100000 + Math.random()*900000);
+
+        req.session.otp = otp;
+        req.session.otpExpires = Date.now() + 300000; // 5 minute expiration
+        req.session.tempUser = {name,email,password};
+
+        await mailer.sendOTP(email,otp);
+
+        res.redirect("/user/verify-otp");
+
+    }catch(error){
+
+        console.error("OTP sending failed:",error);
+
+        req.session.otp = null;
+        req.session.tempUser = null;
+        req.session.otpExpires = null;
+
+        res.send("Failed to send OTP. Please try again.");
+
+    }
 
 });
 
-/* USER DASHBOARD */
+/* VERIFY OTP */
+router.get("/verify-otp",(req,res)=>{
+    res.render("verify-otp");
+});
 
+router.post("/verify-otp", async (req,res)=>{
+
+    try{
+
+        const enteredOTP = req.body.otp;
+
+        if(!req.session.otp || !req.session.tempUser){
+            return res.send("OTP session expired. Please register again.");
+        }
+
+        if(enteredOTP != req.session.otp){
+            return res.send("Invalid OTP");
+        }
+
+        if(Date.now() > req.session.otpExpires){
+            req.session.otp = null;
+            req.session.tempUser = null;
+            req.session.otpExpires = null;
+
+            return res.send("OTP expired. Please register again.");
+        }
+
+        const {name,email,password} = req.session.tempUser;
+
+        const hashedPassword = await security.hashPassword(password);
+
+        const encryptedName = security.encrypt(name);
+        const encryptedEmail = security.encrypt(email);
+
+        const sql = "INSERT INTO users(name,email,password) VALUES(?,?,?)";
+
+        db.execute(sql,[encryptedName,encryptedEmail,hashedPassword],(err)=>{
+
+            if(err){
+                console.error(err);
+                return res.send("Account creation failed.");
+            }
+
+            req.session.otp = null;
+            req.session.tempUser = null;
+
+            res.redirect("/user/login");
+
+        });
+
+    }catch(error){
+
+        console.error("OTP verification error:",error);
+
+        res.send("Something went wrong during verification.");
+
+    }
+
+});
+
+
+
+/* USER DASHBOARD */
 router.get("/dashboard", auth.checkUser,(req,res)=>{
 
     db.execute("SELECT * FROM products",(err,products)=>{
